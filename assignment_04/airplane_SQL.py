@@ -145,11 +145,15 @@ print(reg_model_sales.summary())
 query_2 = """
            SELECT Sales.*, Specs.*
            FROM Sales
-           JOIN Specs ON Sales.spec_id = Specs.spec_id
+           JOIN Specs ON Sales.sale_id = Specs.sale_id
             """
 print(query_2)
 cur.execute(query_2)
-
+# Correction: From
+# JOIN Specs ON Sales.spec_id = Specs.spec_id
+# to 
+# JOIN Specs ON Sales.sales_id = Specs.sales_id
+# Need the correct name of the column that contains the key.
 
 #--------------------------------------------------
 # b. Create a data frame and load the query
@@ -199,16 +203,30 @@ print(reg_model_sales_specs.summary())
 #    and then joined with the performance data.
 #--------------------------------------------------
 
+# query_3 = """
+#             SELECT Sales.*, Specs.*, Perf.*
+#             FROM Sales
+#             JOIN Specs ON Sales.sale_id = Specs.sale_id
+#             JOIN Perf ON Sales.sale_id = Perf.sale_id
+#             """
+            
+# I'm not sure what went wrong here, either.
+# I just copied and pasted your same text without the spaces.
 query_3 = """
-            SELECT Sales.*, Specs.*, Perf.*
-            FROM Sales
-            JOIN Specs ON Sales.spec_id = Specs.spec_id
-            JOIN Perf ON Sales.perf_id = Perf.perf_id
-            """
+SELECT Sales.*, Specs.*, Perf.*
+FROM Sales
+JOIN Specs ON Sales.sale_id = Specs.sale_id
+JOIN Perf ON Sales.sale_id = Perf.sale_id
+"""
+
 print(query_3)
 cur.execute(query_3)
-
-
+# Correction: From
+# JOIN Specs ON Sales.spec_id = Specs.spec_id
+# JOIN Perf ON Sales.perf_id = Perf.perf_id
+# to 
+# JOIN Specs ON Sales.sales_id = Specs.sales_id
+# JOIN Perf ON Sales.sales_id = Perf.sales_id
 
 
 #--------------------------------------------------
