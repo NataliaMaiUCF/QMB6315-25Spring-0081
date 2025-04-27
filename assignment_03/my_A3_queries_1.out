@@ -1,0 +1,5 @@
+C:\Users\MORIL027\Documents\GitHub\QMB6315S25_Grading\QMB6315-25Spring-0081\assignment_03
+Traceback (most recent call last):
+  File "C:\Users\MORIL027\Documents\GitHub\QMB6315S25_Grading\QMB6315-25Spring-0081\assignment_03\my_A3_queries.py", line 136, in <module>
+    cur.execute('SELECT * FROM state_population')
+sqlite3.OperationalError: no such table: state_population
