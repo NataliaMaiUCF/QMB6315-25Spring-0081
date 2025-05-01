@@ -23,6 +23,7 @@
 import sqlite3
 import pandas as pd
 import statsmodels.api as sm
+import statsmodels.formula.api as smf
 import os
 
 
@@ -91,7 +92,7 @@ print(purchase_app.columns)
 # Fit a regression model to check progress.
 #--------------------------------------------------
 
-reg_model_app = sm.ols(formula = 
+reg_model_app = smf.ols(formula = 
                            "purchases ~ income + C(homeownership) + credit_limit", 
                            data = purchase_app).fit()
 
@@ -117,9 +118,9 @@ print(reg_model_app.summary())
 query_2 = """
            SELECT a.*, 
                   b.fico, 
-                  b.num_past_late, 
-                  b.num_default, 
-                  b.bankruptcy
+                  b.num_late, 
+                  b.past_def, 
+                  b.num_bankruptcy
            FROM Applications a
            JOIN CreditBureau b ON a.app = b.app
             """
@@ -156,9 +157,10 @@ print(purchase_app_bureau.columns)
 # Fit another regression model.
 #--------------------------------------------------
 
-reg_model_app_bureau = sm.ols(formula = 
-                           "model formula goes here", 
-                           data = purchase_app_bureau).fit()
+reg_model_app_bureau = smf.ols(formula = 
+    "purchases ~ income + C(homeownership) + credit_limit + fico + num_late + num_default + bankruptcy", 
+    data = purchase_app_bureau).fit()
+
 
 
 # Display a summary table of regression results.
@@ -182,9 +184,9 @@ print("\nRegression Results:")
 query_3 = """
            SELECT a.*, 
                    b.fico, 
-                   b.num_past_late, 
-                   b.num_default, 
-                   b.bankruptcy,
+                   b num_late, 
+                   b.past_def, 
+                   b.num_bankruptcy
                    d.avg_income,
                    d.density
             FROM Applications a
@@ -220,9 +222,9 @@ print("\nDataFrame Columns:")
 # Fit another regression model.
 #--------------------------------------------------
 
-reg_model_full = sm.ols(formula = 
+reg_model_full = smf.ols(formula = 
                            "purchases ~ income + C(homeownership) + credit_limit + "
-                           "fico + num_past_late + num_default + bankruptcy + "
+                           "fico + num_late + num_default + bankruptcy + "
                            "avg_income + density", 
                            data = purchase_full).fit()
 
@@ -253,8 +255,8 @@ print(purchase_full['utilization'].describe())
 #--------------------------------------------------
 
 
-reg_model_util = sm.ols(
-    formula="utilization ~ income + C(homeownership) + fico + num_past_late + num_default + bankruptcy + avg_income + density",
+reg_model_util = smf.ols(
+    formula="utilization ~ income + C(homeownership) + fico + num_late + num_default + bankruptcy + avg_income + density",
     data=purchase_full
 ).fit()
 
@@ -280,8 +282,8 @@ print(purchase_full['log_odds_util'].describe())
 #--------------------------------------------------
 
 
-reg_model_log_odds = sm.ols(
-    formula="log_odds_util ~ income + C(homeownership) + fico + num_past_late + num_default + bankruptcy + avg_income + density",
+reg_model_log_odds = smf.ols(
+    formula="log_odds_util ~ income + C(homeownership) + fico + num_late + num_default + bankruptcy + avg_income + density",
     data=purchase_full
 ).fit()
 
