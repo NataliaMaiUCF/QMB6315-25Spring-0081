@@ -20,12 +20,9 @@
 ##################################################
 # Import Required Modules
 ##################################################
-import sqlite3
 import pandas as pd
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-import os
-
+import squlite3
+import statsmodels.formula.api as sm 
 
 
 
@@ -36,8 +33,8 @@ import os
 # Set up Workspace
 ##################################################
 
-os.chdir(r'C:\Users\Natalia Mai\Documents\GitHub\QMB6315S25\QMB6315-25Spring-0081\Natalias Repository\final_exam')
-
+pd.set_option('display.max_columns', None)  # Show all columns in output
+pd.set_option('display.float_format', '{:.2f}'.format)  # Format floats nicely
 
 
 
@@ -65,8 +62,8 @@ cur = con.cursor()
 #--------------------------------------------------
 
 query_1 = """
-            Select *
-            FROM Applications
+            qSELECT *
+    FROM Applications
             """
 print(query_1)
 cur.execute(query_1)
@@ -76,14 +73,14 @@ cur.execute(query_1)
 #     results into a dataframe.
 #--------------------------------------------------
 
-purchase_app = pd.read_sql(query_1, con)
+purchase_app = pd.read_sql_query(query_1, con)
 
 # Could use a loop with a pd.concat() command.
 
 
 # Describe the contents of the dataframe to check the result.
-print(purchase_app.describe())
 
+print(purchase_app.describe())
 print(purchase_app.columns)
 
 
@@ -145,9 +142,8 @@ purchase_app_bureau = pd.read_sql(query_2, con)
 
 
 # Describe the contents of the dataframe to check the result.
-print("\nDataFrame Description:")
+
 print(purchase_app_bureau.describe())
-print("\nDataFrame Columns:")
 print(purchase_app_bureau.columns)
 
 
@@ -157,15 +153,14 @@ print(purchase_app_bureau.columns)
 # Fit another regression model.
 #--------------------------------------------------
 
-reg_model_app_bureau = smf.ols(formula = 
-    "purchases ~ income + C(homeownership) + credit_limit + fico + num_late + num_default + bankruptcy", 
-    data = purchase_app_bureau).fit()
+reg_model_app_bureau = sm.ols(formula = 
+                           "purchases ~ income + C(homeownership) + credit_limit + fico + num_late + past_def + num_bankruptcy", 
+                           data = purchase_app_bureau).fit()
 
 
 
 # Display a summary table of regression results.
 print(reg_model_app_bureau.summary())
-print("\nRegression Results:")
 
 
 
@@ -182,16 +177,22 @@ print("\nRegression Results:")
 #--------------------------------------------------
 
 query_3 = """
-           SELECT a.*, 
-                   b.fico, 
-                   b num_late, 
-                   b.past_def, 
-                   b.num_bankruptcy
-                   d.avg_income,
-                   d.density
-            FROM Applications a
-            JOIN CreditBureau b ON a.app = b.app
-            JOIN Demographic d ON a.zip_code = d.zip_code
+           SELECT 
+        a.income,
+        a.homeownership,
+        a.purchases,
+        a.credit_limit,
+        b.fico,
+        b.num_late,
+        b.past_def,
+        b.num_bankruptcy,
+        d.avg_income,
+        d.density
+    FROM Applications AS a
+    JOIN CreditBureau AS b
+        ON a.ssn = b.ssn
+    JOIN Demographic AS d
+        ON a.zip_code = d.zip_code
             """
 print(query_3)
 cur.execute(query_3)
@@ -214,24 +215,19 @@ purchase_full = pd.read_sql(query_3,con)
 
 # Check to see the columns in the result.
 print (purchase_full.describe())
-print("\nDataFrame Summary Statistics:")
 print (purchase_full.columns)
-print("\nDataFrame Columns:")
 
 #--------------------------------------------------
 # Fit another regression model.
 #--------------------------------------------------
 
-reg_model_full = smf.ols(formula = 
-                           "purchases ~ income + C(homeownership) + credit_limit + "
-                           "fico + num_late + num_default + bankruptcy + "
-                           "avg_income + density", 
+reg_model_full = sm.ols(formula = 
+                           "purchases ~ income + C(homeownership) + credit_limit + fico + num_late + past_def + num_bankruptcy + avg_income + density",
                            data = purchase_full).fit()
 
 
 # Display a summary table of regression results.
 print(reg_model_full.summary())
-print("\nFull Regression Model Results:")
 
 
 ##################################################
@@ -241,26 +237,25 @@ print("\nFull Regression Model Results:")
 #--------------------------------------------------
 # Parts a-c with utilization.
 #--------------------------------------------------
-import numpy as np
 
 
 # Create a variable for credit utilization.
-purchase_full['utilization'] = purchase_full['purchases'] / purchase_full['credit_limit']
+purchase_full["utilization"] = purchase_full["purchases"] / purchase_full["credit_limit"]
 
-print("\nCredit Utilization Variable Description:")
-print(purchase_full['utilization'].describe())
+# Describe the new variable
+
+print(purchase_full["utilization"].describe())
 
 #--------------------------------------------------
 # Fit another regression model.
 #--------------------------------------------------
 
 
-reg_model_util = smf.ols(
-    formula="utilization ~ income + C(homeownership) + fico + num_late + num_default + bankruptcy + avg_income + density",
-    data=purchase_full
+reg_model_util = sm.ols(
+    formula = "utilization ~ income + C(homeownership) + fico + num_late + past_def + num_bankruptcy + avg_income + density",
+    data = purchase_full
 ).fit()
 
-print("\nRegression Results for Utilization Model:")
 print(reg_model_util.summary())
 
 #--------------------------------------------------
@@ -270,31 +265,15 @@ print(reg_model_util.summary())
 
 # Create a variable for credit utilization.
 
+import numpy as np  # Add to top of script if not already
 
-purchase_full['utilization_adj'] = purchase_full['utilization'].clip(0.001, 0.999)
-purchase_full['log_odds_util'] = np.log(purchase_full['utilization_adj'] / (1 - purchase_full['utilization_adj'])
+# Filter out rows where utilization is 0 or 1
+purchase_full = purchase_full[(purchase_full["utilization"] > 0) & (purchase_full["utilization"] < 1)]
+
+# Then calculate log_odds_util
+purchase_full["log_odds_util"] = np.log(
+    purchase_full["utilization"] / (1 - purchase_full["utilization"])
 )
-print("\nLog-Odds Utilization Variable Description:")
-print(purchase_full['log_odds_util'].describe())
-
-#--------------------------------------------------
-# Fit another regression model.
-#--------------------------------------------------
-
-
-reg_model_log_odds = smf.ols(
-    formula="log_odds_util ~ income + C(homeownership) + fico + num_late + num_default + bankruptcy + avg_income + density",
-    data=purchase_full
-).fit()
-
-print("\nRegression Results for Log-Odds Utilization Model:")
-print(reg_model_log_odds.summary())
-
-
-
-
-
-
 
 
 
